@@ -1,0 +1,9 @@
+{
+	"name": "khaleelqadatafactory",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "b26515ba-8369-4c07-967a-c0b61946b0c3",
+		"tenantId": "878e967d-7daf-4216-b5a8-de65ba90a7c8"
+	}
+}
