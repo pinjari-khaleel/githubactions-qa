@@ -27,7 +27,7 @@ jobs:
         az login --service-principal --username ${{ secrets.AZURE_SP_APP_ID }} --password ${{ secrets.AZURE_SP_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
         pwsh -Command "Install-Module -Name Az -Force -AllowClobber -Scope CurrentUser"
         pwsh -Command "Import-Module Az"
-
+        
     - name: Run ADF Pipeline
       run: |
         # Authenticate to Azure using service principal credentials
