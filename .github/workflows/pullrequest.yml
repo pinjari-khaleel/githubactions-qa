@@ -18,6 +18,10 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Debug PowerShell Module Directory
+      run: |
+           pwsh -Command "Get-Module -ListAvailable"
+
     - name: Authenticate to Azure PowerShell
       run: |
         az login --service-principal --username ${{ secrets.AZURE_SP_APP_ID }} --password ${{ secrets.AZURE_SP_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
