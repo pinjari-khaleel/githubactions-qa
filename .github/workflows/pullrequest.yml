@@ -34,7 +34,7 @@ jobs:
         # Check if the pull request was merged into the "dev" branch
         if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" == "dev" ] && [ "${{ github.event.pull_request.merged }}" == "true" ]; then
           # Trigger the pipeline run
-          az datafactory pipeline create-run --resource-group $resourceGroupName --factory-name $dataFactoryName --name "pipeline1" --is-recursive
+          az datafactory pipeline create-run --resource-group $resourceGroupName --factory-name $dataFactoryName --name "pipeline1"
         else
           echo "Not triggering the pipeline as the pull request was not merged into the dev branch."
         fi
