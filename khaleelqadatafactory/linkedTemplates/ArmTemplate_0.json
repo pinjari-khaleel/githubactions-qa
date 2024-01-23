@@ -67,7 +67,7 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"fileName": "details5.txt",
+						"fileName": "details6.txt",
 						"folderPath": "Output",
 						"container": "adfqa"
 					}
