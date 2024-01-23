@@ -1,0 +1,19 @@
+{
+	"name": "InputDataset1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "linkedserviceqa",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "details.txt",
+				"folderPath": "input",
+				"container": "adfqa"
+			}
+		}
+	}
+}
