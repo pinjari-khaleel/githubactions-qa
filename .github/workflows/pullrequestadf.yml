@@ -64,7 +64,7 @@ jobs:
       run: |
         export RESOURCE_GROUP_NAME="demo"
         export DATA_FACTORY_NAME="khaleelqadatafactory"
-        export PIPELINE_NAME="YourPipelineName"  # Replace with your pipeline name
+        export PIPELINE_NAME="pipeline1"  # Replace with your pipeline name
 
         # Use the obtained ADF_TOKEN to make API calls
         ADF_TOKEN="${{ steps.get_adf_token.outputs.adf_token }}"
