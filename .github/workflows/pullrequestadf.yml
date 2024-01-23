@@ -1,6 +1,7 @@
 name: ADF Pipeline run on PR Approval
+
 on:
-   pull_request:
+  pull_request:
     types:
       - closed
 
@@ -8,60 +9,67 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - uses: actions/checkout@v3
-# Installs Node and the npm packages saved in your package.json file in the build
     - name: Setup Node.js environment
       uses: actions/setup-node@v3.4.1
       with:
         node-version: 14.x
-        
-    - name: install ADF Utilities package
-      run: npm install
-      working-directory: ${{github.workspace}}/ADFroot/build  # (1) provide the folder location of the package.json file
-        
-# Validates all of the Data Factory resources in the repository. You'll get the same validation errors as when "Validate All" is selected.
-    - name: Validate
-      run: npm run build validate ${{github.workspace}}/ADFroot/ /subscriptions/01526a7b-272d-4c46-8e0e-173ff609b40b/resourceGroups/demo/providers/Microsoft.DataFactory/factories/khaleelqadatafactory # (2) The validate command needs the root folder location of your repository where all the objects are stored. And the 2nd parameter is the resourceID of the ADF instance 
-      working-directory: ${{github.workspace}}/ADFroot/build
- 
 
-    - name: Validate and Generate ARM template
-      run: npm run build export ${{github.workspace}}/ADFroot/ /subscriptions/01526a7b-272d-4c46-8e0e-173ff609b40b/resourceGroups/demo/providers/Microsoft.DataFactory/factories/khaleelqadatafactory "ExportedArmTemplate"  # (3) The build command, as validate, needs the root folder location of your repository where all the objects are stored. And the 2nd parameter is the resourceID of the ADF instance. The 3rd parameter is the exported ARM template artifact name 
+    - name: Install ADF Utilities package
+      run: npm install
       working-directory: ${{github.workspace}}/ADFroot/build
- 
-# In order to leverage the artifact in another job, we need to upload it with the upload action 
-    - name: upload artifact
+
+    - name: Validate and Export ARM Template
+      run: |
+        npm run build validate ${{github.workspace}}/ADFroot/ /subscriptions/01526a7b-272d-4c46-8e0e-173ff609b40b/resourceGroups/demo/providers/Microsoft.DataFactory/factories/khaleelqadatafactory
+        npm run build export ${{github.workspace}}/ADFroot/ /subscriptions/01526a7b-272d-4c46-8e0e-173ff609b40b/resourceGroups/demo/providers/Microsoft.DataFactory/factories/khaleelqadatafactory "ExportedArmTemplate"
+      working-directory: ${{github.workspace}}/ADFroot/build
+
+    - name: Upload ARM Template Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: ExportedArmTemplate # (4) use the same artifact name you used in the previous export step
+        name: ExportedArmTemplate
         path: ${{github.workspace}}/ADFroot/build/ExportedArmTemplate
-        
+
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    
- # we 1st download the previously uploaded artifact so we can leverage it later in the release job     
-      - name: Download a Build Artifact
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: ExportedArmTemplate # (5) Artifact name 
+    - name: Download ARM Template Artifact
+      uses: actions/download-artifact@v3.0.2
+      with:
+        name: ExportedArmTemplate
 
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        enable-AzPSSession: true
 
-      - name: Login via Az module
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: true 
+    - name: Obtain ADF_TOKEN
+      id: get_adf_token
+      run: |
+        export ADF_TOKEN=$(az account get-access-token --resource=https://management.azure.com --output tsv --query accessToken)
+        echo "::set-output name=adf_token::${ADF_TOKEN}"
+      env:
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: data-factory-deploy
-        uses: Azure/data-factory-deploy-action@v1.2.0
-        with:
-          resourceGroupName: demo # (6) your target ADF resource group name
-          dataFactoryName: khaleelqadatafactory # (7) your target ADF name
-          armTemplateFile: ARMTemplateForFactory.json # (8) ARM template file name ARMTemplateForFactory.json
-          armTemplateParametersFile: ARMTemplateParametersForFactory.json # (9) ARM template parameters file name ARMTemplateParametersForFactory.json
-          additionalParameters: 'adfname=khaleelqadatafactory' # (10) Parameters which will be replaced in the ARM template. Expected format 'key1=value key2=value keyN=value'. At the minimum here you should provide the target ADF name parameter. Check the ARMTemplateParametersForFactory.json file for all the parameters that are expected in your scenario
+    - name: Trigger ADF Pipeline Run
+      run: |
+        export RESOURCE_GROUP_NAME="demo"
+        export DATA_FACTORY_NAME="khaleelqadatafactory"
+        export PIPELINE_NAME="YourPipelineName"  # Replace with your pipeline name
+
+        # Use the obtained ADF_TOKEN to make API calls
+        ADF_TOKEN="${{ steps.get_adf_token.outputs.adf_token }}"
+
+        # Trigger Pipeline Run
+        curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $ADF_TOKEN" \
+          -d '{}' \
+          "https://management.azure.com/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/$RESOURCE_GROUP_NAME/providers/Microsoft.DataFactory/factories/$DATA_FACTORY_NAME/pipelines/$PIPELINE_NAME/createRun?api-version=2018-06-01"
