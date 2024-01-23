@@ -1,3 +1,4 @@
+name: ADF Pipeline run on PR Approval
 on:
    pull_request:
     types:
