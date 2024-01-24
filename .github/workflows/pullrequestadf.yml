@@ -1,0 +1,55 @@
+name: ADF Pipeline run on PR Approval
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3.4.1
+      with:
+        node-version: 14.x
+
+    - name: Install ADF Utilities package
+      run: npm install
+      working-directory: ${{github.workspace}}/ADFroot/build
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        #client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        #tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        #subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        #enable-AzPSSession: true
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Obtain ADF_TOKEN
+      id: get_adf_token
+      run: |
+        export ADF_TOKEN=$(az account get-access-token --resource=https://management.azure.com --output tsv --query accessToken)
+        echo "::set-output name=adf_token::${ADF_TOKEN}"
+      env:
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Trigger ADF Pipeline Run
+      run: |
+        export RESOURCE_GROUP_NAME=="${{ secrets.RESOURCE_GROUP }}"
+        export DATA_FACTORY_NAME="${{ secrets.FACTORY_NAME }}"
+        export PIPELINE_NAME="${{ secrets.ADF_PIPELINE1 }}"  # Replace with your pipeline name
+
+        # Use the obtained ADF_TOKEN to make API calls
+        ADF_TOKEN="${{ steps.get_adf_token.outputs.adf_token }}"
+
+        # Trigger Pipeline Run
+        curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $ADF_TOKEN" \
+          -d '{}' \
+          "https://management.azure.com/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/$RESOURCE_GROUP_NAME/providers/Microsoft.DataFactory/factories/$DATA_FACTORY_NAME/pipelines/$PIPELINE_NAME/createRun?api-version=2018-06-01"

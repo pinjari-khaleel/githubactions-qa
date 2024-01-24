@@ -11,6 +11,7 @@
 			"location": {
 				"type": "AzureBlobStorageLocation",
 				"fileName": "details8.txt",
+
 				"folderPath": "Output",
 				"container": "adfqa"
 			}

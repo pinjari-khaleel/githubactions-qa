@@ -10,37 +10,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Set up Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Debug PowerShell Module Directory
-      run: |
-           pwsh -Command "Get-Module -ListAvailable"
+      - name: Debug PowerShell Module Directory
+        run: |
+          pwsh -Command "Get-Module -ListAvailable"
 
-    - name: Authenticate to Azure PowerShell
-      run: |
-        az login --service-principal --username ${{ secrets.AZURE_SP_APP_ID }} --password ${{ secrets.AZURE_SP_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-        pwsh -Command "Install-Module -Name Az -Force -AllowClobber -Scope CurrentUser"
-        pwsh -Command "Import-Module Az"
-        
-    - name: Run ADF Pipeline
-      run: |
-        # Authenticate to Azure using service principal credentials
-        az login --service-principal --username ${{ secrets.AZURE_SP_APP_ID }} --password ${{ secrets.AZURE_SP_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      - name: Authenticate to Azure PowerShell
+        run: |
+          az login --service-principal --username ${{ secrets.AZURE_SP_APP_ID }} --password ${{ secrets.AZURE_SP_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          pwsh -Command "Install-Module -Name Az -Force -AllowClobber -Scope CurrentUser"
+          pwsh -Command "Import-Module Az"
 
-        # Set the Azure Data Factory details
-        resourceGroupName="demo"
-        dataFactoryName="khaleelqadatafactory"
+      - name: Run ADF Pipeline
+        run: |
+          # Print variables for debugging
+          echo "GitHub Event Name: ${{ github.event_name }}"
+          echo "PR Base Ref: ${{ github.event.pull_request.base.ref }}"
+          echo "PR Merged: ${{ github.event.pull_request.merged }}"
 
-        # Check if the pull request was merged into the "dev" branch
-        if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" == "dev" ] && [ "${{ github.event.pull_request.merged }}" == "true" ]; then
-          # Trigger the pipeline run
-          az datafactory pipeline create-run --resource-group $resourceGroupName --factory-name $dataFactoryName --name "pipeline1"
-        else
-          echo "Not triggering the pipeline as the pull request was not merged into the dev branch."
-        fi
+          # Authenticate to Azure using service principal credentials
+          # This login is not necessary if Azure CLI login is already done above
+
+          # Set the Azure Data Factory details
+          resourceGroupName="demo"
+          dataFactoryName="khaleelqadatafactory"
+
+          # Check if the pull request was merged into the "dev" branch
+          if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" == "dev" ] && [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+            # Trigger the pipeline run
+            az datafactory pipeline create-run --resource-group $resourceGroupName --factory-name $dataFactoryName --name "pipeline1"
+          else
+            echo "Not triggering the pipeline as the pull request was not merged into the dev branch."
+          fi
