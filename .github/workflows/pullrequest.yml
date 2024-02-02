@@ -32,7 +32,7 @@ jobs:
   release_2:
     runs-on: Ubuntu-latest
     needs: [build, release_1]
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.job_to_run == 'release_2' }}
+    if:  github.event_name == 'workflow_dispatch' && github.event.inputs.job_to_run == 'release_2' 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
