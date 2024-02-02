@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - dev
-
+  workflow_dispatch:
+    inputs:
+      job_to_run:
+        description: 'Job to run manually'
+        required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,12 +32,11 @@ jobs:
   release_2:
     runs-on: Ubuntu-latest
     needs: [build, release_1]
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'manual'
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.job_to_run == 'release_2' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Release2
         run: |
-          echo " This is Release 2 job"
-        
+          echo " This is Release 2 job"        
            
