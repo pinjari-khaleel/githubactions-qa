@@ -1,51 +1,38 @@
 name: ADF Pipeline on PR Approval
 
 on:
-  pull_request:
-    types:
-      - closed
+  push:
+    branches:
+      - dev
 
 jobs:
-  run_adf_pipeline:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v2
-
-      - name: Set up Azure CLI
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Debug PowerShell Module Directory
+      - name: Build
         run: |
-          pwsh -Command "Get-Module -ListAvailable"
-
-      - name: Authenticate to Azure PowerShell
+           echo "This is Build job"
+  release_1:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.actions == 'closed' && github.event.pull_request_merged == true
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Release1
         run: |
-          az login --service-principal --username ${{ secrets.AZURE_SP_APP_ID }} --password ${{ secrets.AZURE_SP_PASSWORD }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          pwsh -Command "Install-Module -Name Az -Force -AllowClobber -Scope CurrentUser"
-          pwsh -Command "Import-Module Az"
-
-      - name: Run ADF Pipeline
+          echo " This is Release 1 job"
+  release_2:
+    runs-on: Ubuntu-latest
+    needs: [build, release_1]
+    if: manual
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Release2
         run: |
-          # Print variables for debugging
-          echo "GitHub Event Name: ${{ github.event_name }}"
-          echo "PR Base Ref: ${{ github.event.pull_request.base.ref }}"
-          echo "PR Merged: ${{ github.event.pull_request.merged }}"
-
-          # Authenticate to Azure using service principal credentials
-          # This login is not necessary if Azure CLI login is already done above
-
-          # Set the Azure Data Factory details
-          resourceGroupName="demo"
-          dataFactoryName="khaleelqadatafactory"
-
-          # Check if the pull request was merged into the "dev" branch
-          if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" == "dev" ] && [ "${{ github.event.pull_request.merged }}" == "true" ]; then
-            # Trigger the pipeline run
-            az datafactory pipeline create-run --resource-group $resourceGroupName --factory-name $dataFactoryName --name "pipeline1"
-          else
-            echo "Not triggering the pipeline as the pull request was not merged into the dev branch."
-          fi
+          echo " This is Release 2 job"
+        
+           
