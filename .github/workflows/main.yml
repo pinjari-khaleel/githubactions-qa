@@ -1,0 +1,12 @@
+name: Manually triggered workflow
+on: 
+  workflow_dispatch:
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Release2
+        run: |
+          echo " This is Release manually triggered job"   
