@@ -14,20 +14,21 @@ jobs:
       - name: Build
         run: |
            echo "This is Build job"
+           
   release_1:
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'pull_request' && github.event.actions == 'closed' && github.event.pull_request_merged == true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Release1
         run: |
           echo " This is Release 1 job"
+          
   release_2:
     runs-on: Ubuntu-latest
     needs: [build, release_1]
-    if: manual
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'manual'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
